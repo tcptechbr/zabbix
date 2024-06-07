@@ -1,0 +1,44 @@
+### update zabbix 6 to 7 Debian 11
+
+# Atualiza os pacotes e o sistema
+echo "Atualizando pacotes e sistema..."
+sudo apt update -y && sudo apt upgrade -y
+
+# Verifica a versão atual do Zabbix
+echo "Verificando a versão atual do Zabbix..."
+zabbix_version=$(zabbix_server -V | grep 'Zabbix server' | awk '{print $3}')
+echo "Versão atual do Zabbix: $zabbix_version"
+
+# Faz backup do banco de dados do Zabbix
+echo "Fazendo backup do banco de dados do Zabbix..."
+db_name="zabbix"
+db_user="zabbix"
+db_password="your_db_password" # substitua pela senha do seu banco de dados
+backup_dir="/var/backups/zabbix"
+mkdir -p $backup_dir
+mysqldump -u $db_user -p$db_password $db_name > $backup_dir/zabbix_backup_$(date +%F).sql
+
+# Adiciona o repositório do Zabbix 7.0
+echo "Adicionando o repositório do Zabbix 7.0..."
+wget https://repo.zabbix.com/zabbix/7.0/debian/pool/main/z/zabbix-release/zabbix-release_7.0-1+debian11_all.deb
+sudo dpkg -i zabbix-release_7.0-1+debian11_all.deb
+
+# Atualiza os pacotes do Zabbix
+echo "Atualizando os pacotes do Zabbix..."
+sudo apt update
+sudo apt install --only-upgrade zabbix-server-mysql zabbix-frontend-php zabbix-agent -y
+
+# Atualiza o banco de dados do Zabbix
+echo "Atualizando o banco de dados do Zabbix..."
+sudo zabbix_server -r
+
+# Reinicia os serviços do Zabbix
+echo "Reiniciando os serviços do Zabbix..."
+sudo systemctl restart zabbix-server zabbix-agent apache2
+
+# Verifica a versão atualizada do Zabbix
+echo "Verificando a versão atualizada do Zabbix..."
+zabbix_version=$(zabbix_server -V | grep 'Zabbix server' | awk '{print $3}')
+echo "Versão atualizada do Zabbix: $zabbix_version"
+
+echo "Atualização concluída com sucesso!"
